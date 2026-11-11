@@ -1,0 +1,310 @@
+import React, { useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationsContext';
+import { useEmployees } from '../../contexts/EmployeesContext';
+import { useSchedules } from '../../contexts/SchedulesContext';
+import { useScheduleRequests } from '../../contexts/ScheduleRequestsContext';
+import { useEmployeeRequests } from '../../contexts/EmployeeRequestsContext';
+import { 
+  Users, 
+  Calendar, 
+  Bell, 
+  Clock, 
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  AlertCircle
+} from 'lucide-react';
+
+const Dashboard = () => {
+  const { user, logout } = useAuth();
+  const { 
+    notifications, 
+    unreadCount, 
+    fetchNotifications, 
+    markAsRead 
+  } = useNotifications();
+  const { employees, fetchEmployees } = useEmployees();
+  const { schedules, fetchSchedules } = useSchedules();
+  const { 
+    requests: scheduleRequests, 
+    fetchRequests: fetchScheduleRequests,
+    approveRequest: approveScheduleRequest,
+    rejectRequest: rejectScheduleRequest
+  } = useScheduleRequests();
+  const { 
+    requests: employeeRequests, 
+    fetchRequests: fetchEmployeeRequests,
+    approveRequest: approveEmployeeRequest,
+    rejectRequest: rejectEmployeeRequest
+  } = useEmployeeRequests();
+
+  useEffect(() => {
+    // Cargar todos los datos al montar el componente
+    fetchNotifications();
+    fetchEmployees();
+    fetchSchedules();
+    fetchScheduleRequests();
+    fetchEmployeeRequests();
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const handleApproveEmployee = async (id: number) => {
+    try {
+      await approveEmployeeRequest(id);
+      fetchNotifications(); // Actualizar notificaciones
+    } catch (error) {
+      console.error('Error approving employee request:', error);
+    }
+  };
+
+  const handleRejectEmployee = async (id: number) => {
+    try {
+      await rejectEmployeeRequest(id, 'No cumple con los requisitos');
+      fetchNotifications(); // Actualizar notificaciones
+    } catch (error) {
+      console.error('Error rejecting employee request:', error);
+    }
+  };
+
+  const handleApproveSchedule = async (id: number) => {
+    try {
+      await approveScheduleRequest(id);
+      fetchNotifications(); // Actualizar notificaciones
+    } catch (error) {
+      console.error('Error approving schedule request:', error);
+    }
+  };
+
+  const handleRejectSchedule = async (id: number) => {
+    try {
+      await rejectScheduleRequest(id, 'No se puede aprobar en este momento');
+      fetchNotifications(); // Actualizar notificaciones
+    } catch (error) {
+      console.error('Error rejecting schedule request:', error);
+    }
+  };
+
+  const pendingEmployeeRequests = employeeRequests.filter(r => r.estado === 'pendiente');
+  const pendingScheduleRequests = scheduleRequests.filter(r => r.estado === 'pendiente');
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Sistema de Gestión de Horarios
+              </h1>
+              <p className="text-gray-600">
+                Bienvenido, {user?.nombre}
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Bell className="h-6 w-6 text-gray-500" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-sm text-gray-500">
+                Rol: {user?.rol}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Empleados</p>
+                <p className="text-2xl font-bold text-gray-900">{employees.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <Calendar className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Horarios</p>
+                <p className="text-2xl font-bold text-gray-900">{schedules.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Solicitudes de Horario</p>
+                <p className="text-2xl font-bold text-gray-900">{pendingScheduleRequests.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Solicitudes de Empleado</p>
+                <p className="text-2xl font-bold text-gray-900">{pendingEmployeeRequests.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Notificaciones Recientes</h2>
+            <div className="space-y-3">
+              {notifications.slice(0, 3).map((notification) => (
+                <div 
+                  key={notification.id} 
+                  className={`p-3 rounded-lg border ${
+                    notification.leida ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">{notification.titulo}</p>
+                      <p className="text-sm text-gray-600">{notification.mensaje}</p>
+                    </div>
+                    {!notification.leida && (
+                      <button
+                        onClick={() => markAsRead(notification.id)}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Marcar como leída
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <button className="p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100">
+                <Users className="h-6 w-6 mx-auto mb-2" />
+                <span className="text-sm">Gestionar Empleados</span>
+              </button>
+              <button className="p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100">
+                <Calendar className="h-6 w-6 mx-auto mb-2" />
+                <span className="text-sm">Administrar Horarios</span>
+              </button>
+              <button className="p-3 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100">
+                <Clock className="h-6 w-6 mx-auto mb-2" />
+                <span className="text-sm">Ver Solicitudes</span>
+              </button>
+              <button className="p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100">
+                <TrendingUp className="h-6 w-6 mx-auto mb-2" />
+                <span className="text-sm">Ver Reportes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Requests */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Employee Requests */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Solicitudes de Empleado Pendientes</h2>
+            <div className="space-y-3">
+              {pendingEmployeeRequests.slice(0, 3).map((request) => (
+                <div key={request.id} className="p-3 border rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">{request.nombre}</p>
+                      <p className="text-sm text-gray-600">{request.correo}</p>
+                      <p className="text-sm text-gray-500">Posición: {request.posicion_deseada}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleApproveEmployee(request.id)}
+                        className="p-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleRejectEmployee(request.id)}
+                        className="p-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {pendingEmployeeRequests.length === 0 && (
+                <p className="text-gray-500 text-center py-4">No hay solicitudes pendientes</p>
+              )}
+            </div>
+          </div>
+
+          {/* Schedule Requests */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Solicitudes de Horario Pendientes</h2>
+            <div className="space-y-3">
+              {pendingScheduleRequests.slice(0, 3).map((request) => (
+                <div key={request.id} className="p-3 border rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {request.tipo_solicitud.charAt(0).toUpperCase() + request.tipo_solicitud.slice(1)}
+                      </p>
+                      <p className="text-sm text-gray-600">Fecha: {request.fecha_solicitada}</p>
+                      <p className="text-sm text-gray-500">{request.motivo}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleApproveSchedule(request.id)}
+                        className="p-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleRejectSchedule(request.id)}
+                        className="p-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {pendingScheduleRequests.length === 0 && (
+                <p className="text-gray-500 text-center py-4">No hay solicitudes pendientes</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
